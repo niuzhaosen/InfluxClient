@@ -7,7 +7,7 @@
         public int Port { get; set; }
         public string Organization { get; set; }
         public string Bucket { get; set; }
-        HttpRequest HttpRequest = new HttpRequest();
+        HttpRequest HttpRequest = new HttpRequest(); 
         /// <summary>
         /// 构造函数
         /// </summary>
