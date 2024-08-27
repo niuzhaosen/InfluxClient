@@ -1,4 +1,6 @@
-﻿namespace InfluxClient
+﻿using System.Diagnostics.Metrics;
+
+namespace InfluxClient
 {
     public class InfluxClient
     {
@@ -7,7 +9,7 @@
         public int Port { get; set; }
         public string Organization { get; set; }
         public string Bucket { get; set; }
-        HttpRequest HttpRequest = new HttpRequest(); 
+        HttpRequest HttpRequest = new HttpRequest();
         /// <summary>
         /// 构造函数
         /// </summary>
@@ -47,7 +49,7 @@
                 switch (field.Value.Type)
                 {
                     case FieldType.Integer: writeStr += field.Key + "=" + field.Value.Value.ToString() + "i"; break;
-                    case FieldType.UInteger: writeStr += field.Key + "=" + field.Value.Value.ToString()+"u"; break; 
+                    case FieldType.UInteger: writeStr += field.Key + "=" + field.Value.Value.ToString() + "u"; break;
                     case FieldType.Float: writeStr += field.Key + "=" + field.Value.Value.ToString(); break;
                     case FieldType.String: writeStr += field.Key + "=\"" + field.Value.Value.ToString() + "\""; break;
 
@@ -56,7 +58,53 @@
             }
             writeStr += " ";
             writeStr += timestamp.ToString();
-            HttpRequest.HttpPost( string.Format("http://{0}:{1}/api/v2/write?org={2}&bucket={3}&precision=ns",Ip,Port,Organization,Bucket), Token, writeStr);
+            HttpRequest.HttpPost(string.Format("http://{0}:{1}/api/v2/write?org={2}&bucket={3}&precision=ns", Ip, Port, Organization, Bucket), Token, writeStr);
+        }
+        public void Write(List<string> measurementList, List<Dictionary<string, string>> tagsList, List<Dictionary<string, Field>> fieldsList, List<long> timestampList = null)
+        {
+            string writeStr = "";
+            for (int i = 0; i < measurementList.Count; i++)
+            {
+               string measurement = measurementList[i];
+                Dictionary<string, string> tags= tagsList[i];
+                Dictionary<string, Field> fields= fieldsList[i];
+                long timestamp = 0;
+                if(timestampList!=null)
+                {
+                    timestamp= timestampList[i];
+                }
+                else
+                {
+                    timestamp = GetTimeStamp();
+                }
+                writeStr += measurement;
+                foreach (var tag in tags)
+                {
+                    writeStr += "," + tag.Key + "=" + tag.Value;
+                }
+                writeStr += " ";
+                int fieldrow = 0;
+                foreach (var field in fields)
+                {
+                    if (fieldrow != 0)
+                        writeStr += ",";
+                    switch (field.Value.Type)
+                    {
+                        case FieldType.Integer: writeStr += field.Key + "=" + field.Value.Value.ToString() + "i"; break;
+                        case FieldType.UInteger: writeStr += field.Key + "=" + field.Value.Value.ToString() + "u"; break;
+                        case FieldType.Float: writeStr += field.Key + "=" + field.Value.Value.ToString(); break;
+                        case FieldType.String: writeStr += field.Key + "=\"" + field.Value.Value.ToString() + "\""; break;
+
+                    }
+                    fieldrow++;
+                }
+                writeStr += " ";
+                writeStr += timestamp.ToString();
+                writeStr += "\n";
+
+            }
+            HttpRequest.HttpPost(string.Format("http://{0}:{1}/api/v2/write?org={2}&bucket={3}&precision=ns", Ip, Port, Organization, Bucket), Token, writeStr);
+
         }
         private long GetTimeStamp()
         {
